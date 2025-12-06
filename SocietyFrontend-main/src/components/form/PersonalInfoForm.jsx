@@ -8,8 +8,17 @@ import Autocomplete from "@mui/material/Autocomplete";
 const PersonalInfoForm = ({ formData, handleChange }) => {
   const personalInfo = formData.personalDetails || formData.personalInformation || {};
   const [dobError, setDobError] = useState("");
+  const [errors, setErrors] = useState({});
   const [civilScoreText, setCivilScoreText] = useState("");
   const theme = useTheme();
+
+  // Validation regex patterns
+  const validationPatterns = {
+    phone: /^[6-9]\d{9}$/, // Indian mobile numbers starting with 6-9, 10 digits
+    landline: /^[0-9]\d{9,11}$/, // 10-12 digits for landline
+    email: /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/,
+    whatsapp: /^[6-9]\d{9}$/ // WhatsApp validation same as phone
+  };
 
   const handleFieldChange = (field, value) => {
     if (formData.personalDetails) {
@@ -17,6 +26,86 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
     } else {
       handleChange("personalInformation", field, value);
     }
+    if (errors[field]) {
+      setErrors(prev => ({ ...prev, [field]: null }));
+    }
+
+    // Validate specific fields on change
+    validateField(field, value);
+  };
+  // Field-specific validation
+  const validateField = (fieldName, value) => {
+    if (!value || value.trim() === "") {
+      setErrors(prev => ({ ...prev, [fieldName]: null }));
+      return true;
+    }
+
+    let isValid = true;
+    let errorMessage = "";
+
+    switch (fieldName) {
+      case "phoneNo1":
+      case "phoneNo2":
+        isValid = validationPatterns.phone.test(value);
+        errorMessage = "Enter a valid 10-digit mobile number starting with 6-9";
+        break;
+
+      case "whatsappNumber":
+        isValid = validationPatterns.whatsapp.test(value);
+        errorMessage = "Enter a valid 10-digit WhatsApp number starting with 6-9";
+        break;
+
+      case "landlineNo":
+      case "landlineOffice":
+        isValid = validationPatterns.landline.test(value);
+        errorMessage = "Enter a valid landline number (10-12 digits)";
+        break;
+
+      case "emailId1":
+      case "emailId2":
+      case "emailId3":
+        isValid = validationPatterns.email.test(value);
+        errorMessage = "Enter a valid email address";
+        break;
+
+      default:
+        break;
+    }
+
+    if (!isValid) {
+      setErrors(prev => ({ ...prev, [fieldName]: errorMessage }));
+    } else {
+      setErrors(prev => ({ ...prev, [fieldName]: null }));
+    }
+
+    return isValid;
+  };
+
+  // Validate all fields (can be called before submission)
+  const validateAllFields = () => {
+    const newErrors = {};
+    const fieldsToValidate = [
+      "phoneNo1",
+      "phoneNo2",
+      "whatsappNumber",
+      "landlineNo",
+      "landlineOffice",
+      "emailId1",
+      "emailId2",
+      "emailId3"
+    ];
+
+    fieldsToValidate.forEach(field => {
+      if (personalInfo[field]) {
+        const isValid = validateField(field, personalInfo[field]);
+        if (!isValid && !newErrors[field]) {
+          newErrors[field] = errors[field] || "Invalid format";
+        }
+      }
+    });
+
+    setErrors(prev => ({ ...prev, ...newErrors }));
+    return Object.keys(newErrors).length === 0;
   };
 
   // Civil Score logic
@@ -140,8 +229,8 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
     handleFieldChange("minor", isMinor);
   };
 
-  // Common text field styles
-  const textFieldStyles = {
+
+  const textFieldStyles = (fieldName) => ({
     '& .MuiOutlinedInput-root': {
       borderRadius: 2,
       backgroundColor: alpha(theme.palette.background.paper, 0.8),
@@ -153,11 +242,63 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
       '&.Mui-focused': {
         backgroundColor: theme.palette.background.paper,
         boxShadow: `0 0 0 2px ${alpha(theme.palette.primary.main, 0.2)}`,
+      },
+      '&.Mui-error': {
+        backgroundColor: alpha(theme.palette.error.main, 0.05),
+        borderColor: theme.palette.error.main,
+        '&:hover': {
+          backgroundColor: alpha(theme.palette.error.main, 0.08),
+        },
+        '&.Mui-focused': {
+          backgroundColor: alpha(theme.palette.error.main, 0.05),
+          boxShadow: `0 0 0 2px ${alpha(theme.palette.error.main, 0.2)}`,
+        }
       }
     },
     '& .MuiInputLabel-root': {
       fontSize: '0.9rem',
       fontWeight: 500,
+      '&.Mui-error': {
+        color: theme.palette.error.main,
+      }
+    },
+    '& .MuiFormHelperText-root': {
+      fontSize: '0.75rem',
+      marginLeft: 0,
+      '&.Mui-error': {
+        color: theme.palette.error.main,
+        fontWeight: 500,
+      }
+    }
+  });
+  // Phone number formatting helper
+  const formatPhoneNumber = (value) => {
+    // Remove all non-digits
+    const phoneNumber = value.replace(/\D/g, '');
+
+    // Format as per Indian standard: XXX-XXX-XXXX
+    if (phoneNumber.length <= 3) {
+      return phoneNumber;
+    } else if (phoneNumber.length <= 6) {
+      return `${phoneNumber.slice(0, 3)}-${phoneNumber.slice(3)}`;
+    } else {
+      return `${phoneNumber.slice(0, 3)}-${phoneNumber.slice(3, 6)}-${phoneNumber.slice(6, 10)}`;
+    }
+  };
+
+  // Landline formatting helper
+  const formatLandlineNumber = (value) => {
+    const number = value.replace(/\D/g, '');
+
+    // Format based on length
+    if (number.length <= 2) {
+      return number;
+    } else if (number.length <= 5) {
+      return `${number.slice(0, 2)}-${number.slice(2)}`;
+    } else if (number.length <= 8) {
+      return `${number.slice(0, 2)}-${number.slice(2, 5)}-${number.slice(5)}`;
+    } else {
+      return `${number.slice(0, 2)}-${number.slice(2, 5)}-${number.slice(5, 8)}-${number.slice(8, 12)}`;
     }
   };
 
@@ -220,7 +361,7 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
 
         <Grid container spacing={3}>
 
-          {/* Membership Number */}
+
           <Grid size={{ xs: 12, md: 3 }}>
             <StyledTextField
               label="Membership No."
@@ -233,7 +374,7 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
             />
           </Grid>
 
-          {/* Membership Date */}
+
           <Grid size={{ xs: 12, md: 3 }}>
             <StyledTextField
               label="Membership Date"
@@ -248,28 +389,143 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
             />
           </Grid>
 
-          {/* Credit Amount */}
+
+
+
+
+
+          <Grid size={{ xs: 12, md: 2 }}>
+            <Box sx={{ position: 'relative' }}>
+              <ComboBox
+                label="Title"
+                fieldName="title"
+                value={personalInfo.title}
+                options={["Mr", "Mrs", "Miss", "Dr", "CA", "Advocate"]}
+              />
+            </Box>
+          </Grid>
+
+
+          <Grid size={{ xs: 12, md: 4 }}>
+            <StyledTextField
+              label="Name of Member"
+              name="nameOfMember"
+              value={personalInfo.nameOfMember || ""}
+              onChange={(e) => handleFieldChange("nameOfMember", e.target.value)}
+              sx={textFieldStyles}
+            />
+          </Grid>
+
+
+          <Grid size={{ xs: 12, md: 2 }}>
+            <ComboBox
+              label="Father Title"
+              fieldName="fatherTitle"
+              value={personalInfo.fatherTitle}
+              options={["Mr", "Dr", "CA", "Advocate"]}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <StyledTextField
+              label="Name of Father"
+              name="nameOfFather"
+              value={personalInfo.nameOfFather || ""}
+              onChange={(e) => handleFieldChange("nameOfFather", e.target.value)}
+              sx={textFieldStyles}
+            />
+          </Grid>
+
+
+          <Grid size={{ xs: 12, md: 2 }}>
+            <ComboBox
+              label="Mother Title"
+              fieldName="motherTitle"
+              value={personalInfo.motherTitle}
+              options={["Mrs", "Miss", "Dr", "CA", "Advocate"]}
+            />
+          </Grid>
+          <Grid size={{ xs: 12, md: 4 }}>
+            <StyledTextField
+              label="Name of Mother"
+              name="nameOfMother"
+              value={personalInfo.nameOfMother || ""}
+              onChange={(e) => handleFieldChange("nameOfMother", e.target.value)}
+              sx={textFieldStyles}
+            />
+          </Grid>
+
+
           <Grid size={{ xs: 12, md: 3 }}>
             <StyledTextField
-              label="Amount in Credit"
-              name="amountInCredit"
-              type="number"
-              value={personalInfo.amountInCredit || ""}
-              onChange={(e) =>
-                handleFieldChange("amountInCredit", e.target.value)
-              }
+              label="Date of Birth"
+              type="date"
+              name="dateOfBirth"
+              InputLabelProps={{ shrink: true }}
+              value={personalInfo.dateOfBirth || ""}
+              onChange={(e) => handleDateOfBirthChange(e.target.value)}
+              error={!!dobError}
+              helperText={dobError}
               sx={textFieldStyles}
-              InputProps={{
-                startAdornment: (
-                  <Box component="span" sx={{ color: 'text.secondary', mr: 1 }}>
-                    ₹
-                  </Box>
-                ),
+            />
+          </Grid>
+
+
+          <Grid size={{ xs: 12, md: 3 }}>
+            <StyledTextField
+              label="Age in Years"
+              name="ageInYears"
+              value={personalInfo.ageInYears || ""}
+              InputProps={{ readOnly: true }}
+              sx={{
+                ...textFieldStyles,
+                '& .MuiOutlinedInput-root': {
+                  ...textFieldStyles['& .MuiOutlinedInput-root'],
+                }
               }}
             />
           </Grid>
 
-          {/* Civil Score */}
+
+          <Grid size={{ xs: 12, md: 3 }}>
+            <ComboBox
+              label="Minor"
+              fieldName="minor"
+              value={personalInfo.minor ? "Yes" : "No"}
+              options={["Yes", "No"]}
+            />
+          </Grid>
+
+
+          {personalInfo.minor === true && (
+            <>
+              <Grid size={{ xs: 12, md: 4 }}>
+                <StyledTextField
+                  label="Guardian Name"
+                  name="guardianName"
+                  value={personalInfo.guardianName || ""}
+                  onChange={(e) => handleFieldChange("guardianName", e.target.value)}
+                  sx={textFieldStyles}
+                />
+              </Grid>
+
+              <Grid size={{ xs: 12, md: 4 }}>
+                <ComboBox
+                  label="Relation with Guardian"
+                  fieldName="guardianRelation"
+                  value={personalInfo.guardianRelation}
+                  options={[
+                    "Father",
+                    "Mother",
+                    "Grandfather",
+                    "Grandmother",
+                    "Uncle",
+                    "Aunt",
+                  ]}
+                />
+              </Grid>
+            </>
+          )}
+
           <Grid size={{ xs: 12, md: 3 }}>
             <Box sx={{ position: 'relative' }}>
               <StyledTextField
@@ -301,141 +557,7 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
             </Box>
           </Grid>
 
-          {/* Title ComboBox */}
-          <Grid size={{ xs: 12, md: 2 }}>
-            <Box sx={{ position: 'relative' }}>
-              <ComboBox
-                label="Title"
-                fieldName="title"
-                value={personalInfo.title}
-                options={["Mr", "Mrs", "Miss", "Dr", "CA", "Advocate"]}
-              />
-            </Box>
-          </Grid>
-
-          {/* Name of Member */}
-          <Grid size={{ xs: 12, md: 4 }}>
-            <StyledTextField
-              label="Name of Member"
-              name="nameOfMember"
-              value={personalInfo.nameOfMember || ""}
-              onChange={(e) => handleFieldChange("nameOfMember", e.target.value)}
-              sx={textFieldStyles}
-            />
-          </Grid>
-
-          {/* Father Title + Name */}
-          <Grid size={{ xs: 12, md: 2 }}>
-            <ComboBox
-              label="Father Title"
-              fieldName="fatherTitle"
-              value={personalInfo.fatherTitle}
-              options={["Mr", "Dr", "CA", "Advocate"]}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <StyledTextField
-              label="Name of Father"
-              name="nameOfFather"
-              value={personalInfo.nameOfFather || ""}
-              onChange={(e) => handleFieldChange("nameOfFather", e.target.value)}
-              sx={textFieldStyles}
-            />
-          </Grid>
-
-          {/* Mother Title + Name */}
-          <Grid size={{ xs: 12, md: 2 }}>
-            <ComboBox
-              label="Mother Title"
-              fieldName="motherTitle"
-              value={personalInfo.motherTitle}
-              options={["Mrs", "Miss", "Dr", "CA", "Advocate"]}
-            />
-          </Grid>
-          <Grid size={{ xs: 12, md: 4 }}>
-            <StyledTextField
-              label="Name of Mother"
-              name="nameOfMother"
-              value={personalInfo.nameOfMother || ""}
-              onChange={(e) => handleFieldChange("nameOfMother", e.target.value)}
-              sx={textFieldStyles}
-            />
-          </Grid>
-
-          {/* DOB */}
           <Grid size={{ xs: 12, md: 3 }}>
-            <StyledTextField
-              label="Date of Birth"
-              type="date"
-              name="dateOfBirth"
-              InputLabelProps={{ shrink: true }}
-              value={personalInfo.dateOfBirth || ""}
-              onChange={(e) => handleDateOfBirthChange(e.target.value)}
-              error={!!dobError}
-              helperText={dobError}
-              sx={textFieldStyles}
-            />
-          </Grid>
-
-          {/* Age */}
-          <Grid size={{ xs: 12, md: 3 }}>
-            <StyledTextField
-              label="Age in Years"
-              name="ageInYears"
-              value={personalInfo.ageInYears || ""}
-              InputProps={{ readOnly: true }}
-              sx={{
-                ...textFieldStyles,
-                '& .MuiOutlinedInput-root': {
-                  ...textFieldStyles['& .MuiOutlinedInput-root'],
-                }
-              }}
-            />
-          </Grid>
-
-          {/* Minor - Model ke according boolean type hai */}
-          <Grid size={{ xs: 12, md: 2 }}>
-            <ComboBox
-              label="Minor"
-              fieldName="minor"
-              value={personalInfo.minor ? "Yes" : "No"}
-              options={["Yes", "No"]}
-            />
-          </Grid>
-
-          {/* Guardian Fields (if minor) - Model me 'minor' field boolean hai */}
-          {personalInfo.minor === true && (
-            <>
-              <Grid size={{ xs: 12, md: 4 }}>
-                <StyledTextField
-                  label="Guardian Name"
-                  name="guardianName"
-                  value={personalInfo.guardianName || ""}
-                  onChange={(e) => handleFieldChange("guardianName", e.target.value)}
-                  sx={textFieldStyles}
-                />
-              </Grid>
-
-              <Grid size={{ xs: 12, md: 3 }}>
-                <ComboBox
-                  label="Relation with Guardian"
-                  fieldName="guardianRelation"
-                  value={personalInfo.guardianRelation}
-                  options={[
-                    "Father",
-                    "Mother",
-                    "Grandfather",
-                    "Grandmother",
-                    "Uncle",
-                    "Aunt",
-                  ]}
-                />
-              </Grid>
-            </>
-          )}
-
-          {/* Gender */}
-          <Grid size={{ xs: 12, md: 2 }}>
             <ComboBox
               label="Gender"
               fieldName="gender"
@@ -444,8 +566,8 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
             />
           </Grid>
 
-          {/* Religion */}
-          <Grid size={{ xs: 12, md: 2 }}>
+
+          <Grid size={{ xs: 12, md: 3 }}>
             <ComboBox
               label="Religion"
               fieldName="religion"
@@ -461,7 +583,7 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
             />
           </Grid>
 
-          {/* Marital Status */}
+
           <Grid size={{ xs: 12, md: 3 }}>
             <ComboBox
               label="Marital Status"
@@ -471,7 +593,7 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
             />
           </Grid>
 
-          {/* Spouse Fields */}
+
           {personalInfo.maritalStatus === "Married" && (
             <Grid size={{ xs: 12, md: 4 }}>
               <Grid container spacing={2}>
@@ -496,7 +618,7 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
             </Grid>
           )}
 
-          {/* Caste */}
+
           <Grid size={{ xs: 12, md: 3 }}>
             <ComboBox
               label="Caste"
@@ -506,7 +628,7 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
             />
           </Grid>
 
-          {/* Contact Information Section Visual Break */}
+
           <Grid size={{ xs: 12 }}>
             <Box
               sx={{
@@ -526,91 +648,150 @@ const PersonalInfoForm = ({ formData, handleChange }) => {
             />
           </Grid>
 
-          {/* Phone Numbers - Model ke according */}
+
           <Grid size={{ xs: 12, md: 4 }}>
             <StyledTextField
-              label="Phone No. 1"
+              label="Primary Number"
               name="phoneNo1"
               value={personalInfo.phoneNo1 || ""}
               onChange={(e) => handleFieldChange("phoneNo1", e.target.value)}
-              sx={textFieldStyles}
+              onBlur={(e) => validateField("phoneNo1", e.target.value)}
+              error={!!errors.phoneNo1}
+              helperText={errors.phoneNo1}
+              sx={textFieldStyles("phoneNo1")}
+              placeholder="Enter 10-digit mobile number"
+              inputProps={{
+                maxLength: 10,
+                pattern: "[6-9][0-9]{9}"
+              }}
             />
           </Grid>
 
           <Grid size={{ xs: 12, md: 4 }}>
             <StyledTextField
-              label="Phone No. 2"
+              label="Secondary Number"
               name="phoneNo2"
               value={personalInfo.phoneNo2 || ""}
               onChange={(e) => handleFieldChange("phoneNo2", e.target.value)}
-              sx={textFieldStyles}
+              onBlur={(e) => validateField("phoneNo2", e.target.value)}
+              error={!!errors.phoneNo2}
+              helperText={errors.phoneNo2}
+              sx={textFieldStyles("phoneNo2")}
+              placeholder="Optional 10-digit mobile number"
+              inputProps={{
+                maxLength: 10,
+                pattern: "[6-9][0-9]{9}"
+              }}
             />
           </Grid>
 
-          {/* WhatsApp Number - phoneNo3 se change kiya */}
+
           <Grid size={{ xs: 12, md: 4 }}>
             <StyledTextField
               label="WhatsApp Number"
-              name="whatsappNumber"
-              value={personalInfo.whatsappNumber || ""}
-              onChange={(e) => handleFieldChange("whatsappNumber", e.target.value)}
-              sx={textFieldStyles}
+              name="whatsapp"
+              value={personalInfo.whatsapp || ""}
+              onChange={(e) => handleFieldChange("whatsapp", e.target.value)}
+              onBlur={(e) => validateField("whatsappNumber", e.target.value)}
+              error={!!errors.whatsappNumber}
+              helperText={errors.whatsappNumber}
+              sx={textFieldStyles("whatsappNumber")}
+              placeholder="Enter 10-digit WhatsApp number"
+              inputProps={{
+                maxLength: 10,
+                pattern: "[6-9][0-9]{9}"
+              }}
             />
           </Grid>
 
-          {/* Model ke according landline fields */}
+
           <Grid size={{ xs: 12, md: 4 }}>
             <StyledTextField
               label="Landline No."
               name="landlineNo"
               value={personalInfo.landlineNo || ""}
               onChange={(e) => handleFieldChange("landlineNo", e.target.value)}
-              sx={textFieldStyles}
+              onBlur={(e) => validateField("landlineNo", e.target.value)}
+              error={!!errors.landlineNo}
+              helperText={errors.landlineNo}
+              sx={textFieldStyles("landlineNo")}
+              placeholder="Enter 10-12 digit landline number"
+              inputProps={{
+                maxLength: 12,
+              }}
             />
           </Grid>
 
-          {/* Model me 'landlineOffice' hai */}
+
           <Grid size={{ xs: 12, md: 4 }}>
             <StyledTextField
               label="Office Landline No."
               name="landlineOffice"
               value={personalInfo.landlineOffice || ""}
               onChange={(e) => handleFieldChange("landlineOffice", e.target.value)}
-              sx={textFieldStyles}
+              onBlur={(e) => validateField("landlineOffice", e.target.value)}
+              error={!!errors.landlineOffice}
+              helperText={errors.landlineOffice}
+              sx={textFieldStyles("landlineOffice")}
+              placeholder="Enter 10-12 digit office landline"
+              inputProps={{
+                maxLength: 12,
+              }}
             />
           </Grid>
 
-          {/* Email Addresses - Model ke according emailId1, emailId2, emailId3 */}
+
           <Grid size={{ xs: 12, md: 4 }}>
             <StyledTextField
-              label="Email 1"
+              label="Primary Email"
               name="emailId1"
               type="email"
               value={personalInfo.emailId1 || ""}
               onChange={(e) => handleFieldChange("emailId1", e.target.value)}
-              sx={textFieldStyles}
+              onBlur={(e) => validateField("emailId1", e.target.value)}
+              error={!!errors.emailId1}
+              helperText={errors.emailId1}
+              sx={textFieldStyles("emailId1")}
+              placeholder="Enter primary email address"
+              inputProps={{
+                pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+              }}
             />
           </Grid>
 
           <Grid size={{ xs: 12, md: 4 }}>
             <StyledTextField
-              label="Email 2"
+              label="Secondary Email"
               name="emailId2"
               type="email"
               value={personalInfo.emailId2 || ""}
               onChange={(e) => handleFieldChange("emailId2", e.target.value)}
-              sx={textFieldStyles}
+              onBlur={(e) => validateField("emailId2", e.target.value)}
+              error={!!errors.emailId2}
+              helperText={errors.emailId2}
+              sx={textFieldStyles("emailId2")}
+              placeholder="Optional secondary email"
+              inputProps={{
+                pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+              }}
             />
           </Grid>
 
           <Grid size={{ xs: 12, md: 4 }}>
             <StyledTextField
-              label="Email 3"
+              label="Optional Email"
               name="emailId3"
               type="email"
               value={personalInfo.emailId3 || ""}
               onChange={(e) => handleFieldChange("emailId3", e.target.value)}
-              sx={textFieldStyles}
+              onBlur={(e) => validateField("emailId3", e.target.value)}
+              error={!!errors.emailId3}
+              helperText={errors.emailId3}
+              sx={textFieldStyles("emailId3")}
+              placeholder="Optional additional email"
+              inputProps={{
+                pattern: "^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"
+              }}
             />
           </Grid>
         </Grid>

@@ -33,20 +33,21 @@ const memberSchema = new mongoose.Schema(
       ageInYears: { type: String },
       membershipDate: { type: String },
       amountInCredit: { type: String },
-      civilScore: { type: String },
       gender: { type: String },
       maritalStatus: { type: String },
       religion: { type: String },
       caste: { type: String },
       phoneNo1: { type: String },
       phoneNo2: { type: String },
-      whatsappNumber: { type: String },
+      whatsapp: { type: String },
       alternatePhoneNo: { type: String },
       emailId1: { type: String },
       emailId2: { type: String },
       emailId3: { type: String },
       landlineNo: { type: String },
       landlineOffice: { type: String },
+      civilScore: { type: String },
+
     },
 
     // ===== ADDRESS DETAILS =====
@@ -185,6 +186,7 @@ const memberSchema = new mongoose.Schema(
 
     // ===== BANK DETAILS =====
     bankDetails: {
+      accountHolderName: { type: String },
       bankName: { type: String },
       branch: { type: String },
       accountNumber: { type: String },
@@ -227,8 +229,20 @@ const memberSchema = new mongoose.Schema(
     nomineeDetails: {
       nomineeName: { type: String },
       relationWithApplicant: { type: String },
+      nomineeMobileNo: { type: String },
       introduceBy: { type: String },
       memberShipNo: { type: String },
+    },
+    financialDetails: {
+      shareCapital: { type: String },
+      optionalDeposit: { type: String },
+      compulsory: { type: String },
+    },
+
+    creditDetails: {
+      cibilScore: {
+        type: String
+      },
     },
   },
   { timestamps: true }

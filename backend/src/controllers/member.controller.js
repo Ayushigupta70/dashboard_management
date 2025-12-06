@@ -89,7 +89,8 @@ export const createMember = async (req, res) => {
     const bankDetails = safeParse(req.body.bankDetails, {});
     const documents = safeParse(req.body.documents, {});
     const nomineeDetails = safeParse(req.body.nomineeDetails, {});
-
+    const financialDetails = safeParse(req.body.financialDetails, {});
+    const creditDetails = safeParse(req.body.creditDetails, {});
     const uploadedFiles = await mapReqFilesToCloudinary(req);
 
     const memberData = {
@@ -135,7 +136,7 @@ export const createMember = async (req, res) => {
       familyDetails,
       bankDetails,
       nomineeDetails,
-
+      financialDetails,
       professionalDetails: {
         ...professionalDetails,
         qualification: professionalDetails.qualification || "",
@@ -184,6 +185,7 @@ export const createMember = async (req, res) => {
           ? [referenceDetails]
           : [],
       guaranteeDetails,
+      creditDetails,
     };
 
     const member = new Member(memberData);
@@ -222,6 +224,7 @@ export const updateMember = async (req, res) => {
       professionalDetails: safeParse(req.body.professionalDetails, {}),
       bankDetails: safeParse(req.body.bankDetails, {}),
       documents: safeParse(req.body.documents, {}),
+      financialDetails: safeParse(req.body.financialDetails, {}),
     };
 
     const uploadedFiles = await mapReqFilesToCloudinary(req);
@@ -375,7 +378,6 @@ export const getMissingFieldsForMember = async (req, res) => {
         phoneNo: "",
         alternatePhoneNo: "",
         emailId: "",
-        civilScore: "",
       },
       addressDetails: {
         permanentAddress: {

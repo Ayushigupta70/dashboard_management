@@ -24,7 +24,8 @@ import AddressForm from "../components/form/AddressForm";
 import IdentityVerificationForm from "../components/form/IdentityVerificationForm";
 import ProfessionalFamilyForm from "../components/form/ProfessionalFamilyForm";
 import RemarksForm from "../components/form/RemarksForm";
-import FinancialDetailsForm from "../components/form/FinancialDetails"; // Add this import
+import FinancialDetailsForm from "../components/form/FinancialDetails";
+import BankGuaranteeForm from "../components/form/BankGuaranteeForm"
 import { useDispatch, useSelector } from "react-redux";
 import { createMember, clearMemberState } from "../features/member/memberSlice";
 
@@ -58,9 +59,16 @@ const MemberDossierForm = () => {
       religion: "",
       maritalStatus: "",
       caste: "",
-      phoneNo: "",
+      phoneNo1: "",
+      phoneNo2: "",
+      whatsapp: "",
       alternatePhoneNo: "",
-      emailId: "",
+      emailId1: "",
+      emailId2: "",
+      emailId3: "",
+      landlineNo: "",
+      landlineOffice: "",
+
     },
 
     Address: {
@@ -153,9 +161,18 @@ const MemberDossierForm = () => {
       ],
     },
 
+    bankDetails: [{
+      accountHolderName: "",
+      bankName: "",
+      branch: "",
+      accountNumber: "",
+      ifscCode: "",
+    }],
+
     nomineeDetails: {
       nomineeName: "",
       relationWithApplicant: "",
+      nomineeMobileNo: "",
       introduceBy: "",
       memberShipNo: "",
     },
@@ -168,12 +185,16 @@ const MemberDossierForm = () => {
       },
     ],
 
-    // Add financialDetails to initial form data
+
     financialDetails: [{
       shareCapital: "",
       optionalDeposit: "",
       compulsory: ""
     }],
+
+    creditDetails: {
+      cibilScore: "",
+    },
   };
 
   const [formData, setFormData] = useState(initialFormData);
@@ -183,8 +204,9 @@ const MemberDossierForm = () => {
     { label: "Address & Contact", icon: "🏠" },
     { label: "Identity Proof", icon: "🆔" },
     { label: "Professional & Family", icon: "💼" },
+    { label: "Bank Details", icon: "💼" },
     { label: "Remarks", icon: "📝" },
-    { label: "Financial Details", icon: "💰" } // Added Financial Details step
+    { label: "Financial Details", icon: "💰" }
   ];
 
   const handleChange = useCallback((section, field, value) => {
@@ -455,6 +477,15 @@ const MemberDossierForm = () => {
         formDataToSend.append(`familyDetails[relationWithApplicant][${index}]`, item.relationWithApplicant);
       });
 
+      // --- BANK DETAILS ---
+      (values.bankDetails || []).forEach((bank, index) => {
+        Object.entries(bank || {}).forEach(([key, value]) => {
+          if (value !== null && value !== undefined && value !== "") {
+            formDataToSend.append(`bankDetails[${key}]`, value.toString());
+          }
+        });
+      });
+
 
       /* -----------------------------------------
          LOAN DETAILS
@@ -497,7 +528,12 @@ const MemberDossierForm = () => {
       if (financialData.compulsory) {
         formDataToSend.append("financialDetails[compulsory]", financialData.compulsory);
       }
-
+      if (values.creditDetails?.cibilScore) {
+        formDataToSend.append(
+          "creditDetails[cibilScore]",
+          values.creditDetails.cibilScore.toString()
+        );
+      }
       /* -----------------------------------------
          REFERENCES
       ----------------------------------------- */
@@ -588,9 +624,11 @@ const MemberDossierForm = () => {
       case 3:
         return <ProfessionalFamilyForm {...commonProps} />;
       case 4:
-        return <RemarksForm {...commonProps} />;
+        return <BankGuaranteeForm {...commonProps} />;
       case 5:
-        return <FinancialDetailsForm {...commonProps} />; // Added Financial Details as last step
+        return <RemarksForm {...commonProps} />;
+      case 6:
+        return <FinancialDetailsForm {...commonProps} />;
       default:
         return null;
     }
